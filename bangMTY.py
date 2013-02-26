@@ -8,8 +8,10 @@ import wx
 ## TODO: 
 #  - TWITTER: https://github.com/tweepy/tweepy
 #             https://github.com/ryanmcgrath/twython
-#  - GPIO: http://bit.ly/RxbXd1
-#  - GRAPHICS: http://bit.ly/XeL9zS 
+#  - GPIO: http://bit.ly/RxbXd1 (adafruit example)
+#          http://bit.ly/JTlFE3 (elinux.org wiki)
+#  - GRAPHICS: http://bit.ly/96VoEC (pygame)
+#              http://bit.ly/XeL9zS (wx)
 
 
 ######### time constants
