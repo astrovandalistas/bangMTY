@@ -26,12 +26,12 @@ lastMotorCheck = time.time()
 
 ## GPIO stuff
 #GPIO.setmode(GPIO.BCM)
-#MOTOR0 = 18
-#MOTOR1 = 23
-#GPIO.setup(MOTOR0, GPIO.OUT)
-#GPIO.setup(MOTOR1, GPIO.OUT)
-#GPIO.output(MOTOR0, False)
-#GPIO.output(MOTOR1, False)
+#MOTOR_FWD = 18
+#MOTOR_BACK = 23
+#GPIO.setup(MOTOR_FWD, GPIO.OUT)
+#GPIO.setup(MOTOR_BACK, GPIO.OUT)
+#GPIO.output(MOTOR_FWD, False)
+#GPIO.output(MOTOR_BACK, False)
 
 print "WAITING"
 while True:
@@ -49,8 +49,8 @@ while True:
         # check queue
         # if stuff to pop:
         #   pop+display
-        #   GPIO.output(MOTOR0, True)
-        #   GPIO.output(MOTOR1, False)
+        #   GPIO.output(MOTOR_FWD, True)
+        #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_BANGING_FORWARD
         lastMotorCheck = time.time()
         bangsLeft = NUMBER_OF_BANGS
@@ -59,8 +59,8 @@ while True:
           (time.time()-lastMotorCheck > MOTOR_ON_PERIOD) and
           (bangsLeft>0)):
         print "BANG BACK"
-        #   GPIO.output(MOTOR0, False)
-        #   GPIO.output(MOTOR1, True)
+        #   GPIO.output(MOTOR_FWD, False)
+        #   GPIO.output(MOTOR_BACK, True)
         currentState=STATE_BANGING_BACK
         lastMotorCheck = time.time()
         bangsLeft -= 1
@@ -69,8 +69,8 @@ while True:
           (time.time()-lastMotorCheck > MOTOR_ON_PERIOD) and
           (bangsLeft>0)):
         print "BANG FWD"
-        #   GPIO.output(MOTOR0, True)
-        #   GPIO.output(MOTOR1, False)
+        #   GPIO.output(MOTOR_FWD, True)
+        #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_BANGING_FORWARD
         lastMotorCheck = time.time()
     ## if no more bangs left
@@ -78,7 +78,7 @@ while True:
          (bangsLeft <= 0) and 
          (time.time()-lastMotorCheck > MOTOR_ON_PERIOD)):
         print "WAITING"
-        #   GPIO.output(MOTOR0, False)
-        #   GPIO.output(MOTOR1, False)
+        #   GPIO.output(MOTOR_FWD, False)
+        #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_WAITING
         lastMotorCheck = time.time()
