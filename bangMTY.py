@@ -6,10 +6,10 @@ import Queue
 import wx
 
 ## TODO: 
-#  - TWITTER
-#  - GPIO
-#  - GRAPHICS: 
-#  http://stackoverflow.com/questions/9705201/capturing-mouse-events-outside-wx-frame-in-python
+#  - TWITTER: https://github.com/tweepy/tweepy
+#             https://github.com/ryanmcgrath/twython
+#  - GPIO: http://bit.ly/RxbXd1
+#  - GRAPHICS: http://bit.ly/XeL9zS 
 
 
 ######### time constants
@@ -24,9 +24,9 @@ MOTOR_ON_PERIOD = 0.5
 ##     (this can be dynamic, based on length of tweet, for example)
 NUMBER_OF_BANGS = 10
 
+######### state machine
 ## different states motors can be in
 STATE_WAITING, STATE_BANGING_FORWARD, STATE_BANGING_BACK = range(3)
-
 ## state/time variables
 currentState = STATE_WAITING
 bangsLeft = 0
@@ -36,14 +36,20 @@ lastMotorCheck = time.time()
 ## tweet queue
 tweetQueue = Queue.Queue()
 
-## GPIO stuff
+######### GPIO stuff
 #GPIO.setmode(GPIO.BCM)
-#MOTOR_FWD = 18
-#MOTOR_BACK = 23
+#MOTOR_FWD = 17
+#MOTOR_BACK = 18
+#LIGHT_0 = 22
+#LIGHT_1 = 23
 #GPIO.setup(MOTOR_FWD, GPIO.OUT)
 #GPIO.setup(MOTOR_BACK, GPIO.OUT)
+#GPIO.setup(LIGHT_0, GPIO.OUT)
+#GPIO.setup(LIGHT_1, GPIO.OUT)
 #GPIO.output(MOTOR_FWD, False)
 #GPIO.output(MOTOR_BACK, False)
+#GPIO.output(LIGHT_0, False)
+#GPIO.output(LIGHT_1, False)
 
 print "WAITING"
 
