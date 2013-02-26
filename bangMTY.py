@@ -2,8 +2,17 @@
 
 #import RPi.GPIO as GPIO
 import time
+import Queue
+import wx
 
-######### time stuff
+## TODO: 
+#  - TWITTER
+#  - GPIO
+#  - GRAPHICS: 
+#  http://stackoverflow.com/questions/9705201/capturing-mouse-events-outside-wx-frame-in-python
+
+
+######### time constants
 ## how often to check twitter (in seconds)
 TWITTER_CHECK_PERIOD = 10
 ## how often to check queue for new tweets to be processed (in seconds)
@@ -24,6 +33,9 @@ bangsLeft = 0
 lastTwitterCheck = time.time()
 lastMotorCheck = time.time()
 
+## tweet queue
+tweetQueue = Queue.Queue()
+
 ## GPIO stuff
 #GPIO.setmode(GPIO.BCM)
 #MOTOR_FWD = 18
@@ -34,7 +46,12 @@ lastMotorCheck = time.time()
 #GPIO.output(MOTOR_BACK, False)
 
 print "WAITING"
-while True:
+
+##while True:
+def motorLoop(event):
+    global currentState, bangsLeft
+    global lastTwitterCheck, lastMotorCheck, tweetQueue
+
     ## twitter check. not needed if using streams
     if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
         # check twitter here
@@ -44,11 +61,11 @@ while True:
     ## state machine for motors
     ## if motor is idle, and there are tweets to process, start dance
     if ((currentState==STATE_WAITING) and
-        (time.time()-lastMotorCheck > QUEUE_CHECK_PERIOD)):
+        (time.time()-lastMotorCheck > QUEUE_CHECK_PERIOD) and
+        (not tweetQueue.empty())):
         print "BANG FWD"
-        # check queue
-        # if stuff to pop:
-        #   pop+display
+        tweetText = tweetQueue.get()
+        #   TODO: display message?
         #   GPIO.output(MOTOR_FWD, True)
         #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_BANGING_FORWARD
@@ -82,3 +99,22 @@ while True:
         #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_WAITING
         lastMotorCheck = time.time()
+
+
+class Frame(wx.Frame):
+    def __init__(self):
+        wx.Frame.__init__(self, None)
+        self.panel = wx.Panel(self)
+        self.panel.BackgroundColour = wx.RED
+        self.panel.Bind(wx.EVT_LEFT_UP, self.onClick)
+        self.panel.Bind(wx.EVT_IDLE, motorLoop)
+
+    def onClick(self, event):
+        global tweetQueue
+        self.panel.BackgroundColour = wx.GREEN
+        tweetQueue.put("fofofofof")
+
+app = wx.App()
+frame = Frame()
+frame.Show()
+app.MainLoop()
