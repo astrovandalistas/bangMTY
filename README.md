@@ -8,7 +8,7 @@ Dependencies:
 	- cd WiringPi-Python
 	- git submodule update --init
 	- open WiringPi/wiringPi/piNes.c 
-	- change #include <wiringPi.h> to #include "wiringPi.h" in WiringPi/wiringPi/piNes.c
+	- change #include \<wiringPi.h\> to #include "wiringPi.h" in WiringPi/wiringPi/piNes.c
 	- sudo python setup.py install
 	- cd WiringPi
 	- ./build
