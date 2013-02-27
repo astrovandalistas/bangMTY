@@ -6,13 +6,15 @@ import Queue
 import pygame
 from pygame.locals import *
 
+if not pygame.font: print 'Warning, fonts disabled'
+if not pygame.mixer: print 'Warning, sound disabled'
+
 ## TODO: 
 #  - TWITTER: https://github.com/tweepy/tweepy
 #             https://github.com/ryanmcgrath/twython
 #  - GPIO: http://bit.ly/RxbXd1 (adafruit example)
 #          http://bit.ly/JTlFE3 (elinux.org wiki)
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
-#              http://bit.ly/XeL9zS (wx)
 
 
 ######### time constants
@@ -57,9 +59,27 @@ LIGHT_PIN = [22, 23]
 #GPIO.output(LIGHT_PIN[0], False)
 #GPIO.output(LIGHT_PIN[1], False)
 
+######### Windowing stuff
+pygame.init()
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption('Test')
+
+background = pygame.Surface(screen.get_size())
+background = background.convert()
+background.fill((250, 250, 250))
+
+screen.blit(background, (0, 0))
+pygame.display.flip()
+
+
 print "WAITING"
 
 while True:
+    ## handle events
+    for event in pygame.event.get():
+        if event.type == MOUSEBUTTONDOWN:
+            tweetQueue.put("messaged!!!")
+
     ## twitter check. not needed if using streams
     if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
         # check twitter here
