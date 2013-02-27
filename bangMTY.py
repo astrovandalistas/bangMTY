@@ -1,19 +1,23 @@
 #! /usr/bin/env python
 
-#import RPi.GPIO as GPIO
 import time
 import Queue
 import pygame
 from pygame.locals import *
+import os
+import wiringpi
 
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
 
+
+#  - GPIO: http://bit.ly/JTlFE3 (elinux.org wiki)
+#          http://bit.ly/QI8sAU (wiring pi)
+#          http://bit.ly/MDEJVo (wiringpi-python)
+
 ## TODO: 
 #  - TWITTER: https://github.com/tweepy/tweepy
 #             https://github.com/ryanmcgrath/twython
-#  - GPIO: http://bit.ly/RxbXd1 (adafruit example)
-#          http://bit.ly/JTlFE3 (elinux.org wiki)
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
 
 
@@ -49,15 +53,22 @@ tweetQueue = Queue.Queue()
 MOTOR_FWD = 17
 MOTOR_BACK = 18
 LIGHT_PIN = [22, 23]
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(MOTOR_FWD, GPIO.OUT)
-#GPIO.setup(MOTOR_BACK, GPIO.OUT)
-#GPIO.setup(LIGHT_PIN[0], GPIO.OUT)
-#GPIO.setup(LIGHT_PIN[1], GPIO.OUT)
-#GPIO.output(MOTOR_FWD, False)
-#GPIO.output(MOTOR_BACK, False)
-#GPIO.output(LIGHT_PIN[0], False)
-#GPIO.output(LIGHT_PIN[1], False)
+
+os.system("gpio export "+str(MOTOR_FWD)+" out")
+os.system("gpio export "+str(MOTOR_BACK)+" out")
+os.system("gpio export "+str(LIGHT_PIN[0])+" out")
+os.system("gpio export "+str(LIGHT_PIN[1])+" out")
+
+gpio = wiringpi.GPIO(wiringpi.GPIO.WPI_MODE_SYS)
+gpio.pinMode(MOTOR_FWD,gpio.OUTPUT)
+gpio.pinMode(MOTOR_BACK,gpio.OUTPUT)
+gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
+gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
+
+gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
+gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
 ######### Windowing stuff
 pygame.init()
@@ -71,69 +82,77 @@ background.fill((250, 250, 250))
 screen.blit(background, (0, 0))
 pygame.display.flip()
 
+try:
+    print "WAITING"
+    while True:
+        ## handle events
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONDOWN:
+                tweetQueue.put("messaged!!!")
 
-print "WAITING"
+        ## twitter check. not needed if using streams
+        if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
+            # TODO: check twitter here
+            # build queue
+            lastTwitterCheck = time.time()
+    
+        ## state machine for motors
+        ## if motor is idle, and there are tweets to process, start dance
+        if ((currentMotorState==STATE_WAITING) and
+            (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
+            (not tweetQueue.empty())):
+            print "BANG FWD"
+            tweetText = tweetQueue.get()
+            # TODO: display message?
+            gpio.digitalWrite(MOTOR_FWD,gpio.HIGH)
+            gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+            currentMotorState=STATE_BANGING_FORWARD
+            lastMotorUpdate = time.time()
+            bangsLeft = NUMBER_OF_BANGS
+        ## if motor0 has been on for a while, reverse it
+        elif ((currentMotorState==STATE_BANGING_FORWARD) and
+              (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
+              (bangsLeft>0)):
+            print "BANG BACK"
+            gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
+            gpio.digitalWrite(MOTOR_BACK,gpio.HIGH)
+            currentMotorState=STATE_BANGING_BACK
+            lastMotorUpdate = time.time()
+            bangsLeft -= 1
+        ## if motor1 has been on for a while, reverse it
+        elif ((currentMotorState==STATE_BANGING_BACK) and
+              (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
+              (bangsLeft>0)):
+            print "BANG FWD"
+            gpio.digitalWrite(MOTOR_FWD,gpio.HIGH)
+            gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+            currentMotorState=STATE_BANGING_FORWARD
+            lastMotorUpdate = time.time()
+        ## if no more bangs left
+        elif((currentMotorState != STATE_WAITING) and 
+             (bangsLeft <= 0) and 
+             (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
+            print "WAITING"
+            gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
+            gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+            gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+            gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
+            currentMotorState=STATE_WAITING
+            lastMotorUpdate = time.time()
+    
+        ## state machine for lights
+        ## if banging, flicker the lights
+        if (currentMotorState != STATE_WAITING):
+            for i in range(0,2):
+                if (time.time()-lastLightUpdate[i] > LIGHT_ON_PERIOD[i]):
+                    currentLightState[i] = not currentLightState[i]
+                    gpio.digitalWrite(LIGHT_PIN[i],currentLightState[i])
+                    lastLightUpdate[i] = time.time()
 
-while True:
-    ## handle events
-    for event in pygame.event.get():
-        if event.type == MOUSEBUTTONDOWN:
-            tweetQueue.put("messaged!!!")
+except KeyboardInterrupt:
+    print "Cleaning up GPIO"
+    gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
+    gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+    gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+    gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
-    ## twitter check. not needed if using streams
-    if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
-        # check twitter here
-        # build queue
-        lastTwitterCheck = time.time()
-
-    ## state machine for motors
-    ## if motor is idle, and there are tweets to process, start dance
-    if ((currentMotorState==STATE_WAITING) and
-        (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
-        (not tweetQueue.empty())):
-        print "BANG FWD"
-        tweetText = tweetQueue.get()
-        #   TODO: display message?
-        #   GPIO.output(MOTOR_FWD, True)
-        #   GPIO.output(MOTOR_BACK, False)
-        currentMotorState=STATE_BANGING_FORWARD
-        lastMotorUpdate = time.time()
-        bangsLeft = NUMBER_OF_BANGS
-    ## if motor0 has been on for a while, reverse it
-    elif ((currentMotorState==STATE_BANGING_FORWARD) and
-          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
-          (bangsLeft>0)):
-        print "BANG BACK"
-        #   GPIO.output(MOTOR_FWD, False)
-        #   GPIO.output(MOTOR_BACK, True)
-        currentMotorState=STATE_BANGING_BACK
-        lastMotorUpdate = time.time()
-        bangsLeft -= 1
-    ## if motor1 has been on for a while, reverse it
-    elif ((currentMotorState==STATE_BANGING_BACK) and
-          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
-          (bangsLeft>0)):
-        print "BANG FWD"
-        #   GPIO.output(MOTOR_FWD, True)
-        #   GPIO.output(MOTOR_BACK, False)
-        currentMotorState=STATE_BANGING_FORWARD
-        lastMotorUpdate = time.time()
-    ## if no more bangs left
-    elif((currentMotorState != STATE_WAITING) and 
-         (bangsLeft <= 0) and 
-         (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
-        print "WAITING"
-        #   GPIO.output(MOTOR_FWD, False)
-        #   GPIO.output(MOTOR_BACK, False)
-        #   GPIO.output(LIGHT_PIN[0], False)
-        #   GPIO.output(LIGHT_PIN[1], False)
-        currentMotorState=STATE_WAITING
-        lastMotorUpdate = time.time()
-
-    ## state machine for lights
-    ## if banging, flicker the lights
-    if (currentMotorState != STATE_WAITING):
-        for i in range(0,2):
-            if (time.time()-lastLightUpdate[i] > LIGHT_ON_PERIOD[i]):
-                currentLightState[i] = not currentLightState[i]
-                #   GPIO.output(LIGHT_PIN[i], False)
