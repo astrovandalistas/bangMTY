@@ -34,7 +34,7 @@ STATE_WAITING, STATE_BANGING_FORWARD, STATE_BANGING_BACK = range(3)
 currentState = STATE_WAITING
 bangsLeft = 0
 lastTwitterCheck = time.time()
-lastMotorCheck = time.time()
+lastMotorUpdate = time.time()
 
 ## tweet queue
 tweetQueue = Queue.Queue()
@@ -66,7 +66,7 @@ while True:
     ## state machine for motors
     ## if motor is idle, and there are tweets to process, start dance
     if ((currentState==STATE_WAITING) and
-        (time.time()-lastMotorCheck > QUEUE_CHECK_PERIOD) and
+        (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
         (not tweetQueue.empty())):
         print "BANG FWD"
         tweetText = tweetQueue.get()
@@ -74,33 +74,33 @@ while True:
         #   GPIO.output(MOTOR_FWD, True)
         #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_BANGING_FORWARD
-        lastMotorCheck = time.time()
+        lastMotorUpdate = time.time()
         bangsLeft = NUMBER_OF_BANGS
     ## if motor0 has been on for a while, reverse it
     elif ((currentState==STATE_BANGING_FORWARD) and
-          (time.time()-lastMotorCheck > MOTOR_ON_PERIOD) and
+          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
           (bangsLeft>0)):
         print "BANG BACK"
         #   GPIO.output(MOTOR_FWD, False)
         #   GPIO.output(MOTOR_BACK, True)
         currentState=STATE_BANGING_BACK
-        lastMotorCheck = time.time()
+        lastMotorUpdate = time.time()
         bangsLeft -= 1
     ## if motor1 has been on for a while, reverse it
     elif ((currentState==STATE_BANGING_BACK) and
-          (time.time()-lastMotorCheck > MOTOR_ON_PERIOD) and
+          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
           (bangsLeft>0)):
         print "BANG FWD"
         #   GPIO.output(MOTOR_FWD, True)
         #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_BANGING_FORWARD
-        lastMotorCheck = time.time()
+        lastMotorUpdate = time.time()
     ## if no more bangs left
     elif((currentState != STATE_WAITING) and 
          (bangsLeft <= 0) and 
-         (time.time()-lastMotorCheck > MOTOR_ON_PERIOD)):
+         (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
         print "WAITING"
         #   GPIO.output(MOTOR_FWD, False)
         #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_WAITING
-        lastMotorCheck = time.time()
+        lastMotorUpdate = time.time()
