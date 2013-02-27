@@ -23,6 +23,8 @@ TWITTER_CHECK_PERIOD = 10
 QUEUE_CHECK_PERIOD = 10
 ## how long to keep motors on (in seconds)
 MOTOR_ON_PERIOD = 0.5
+## how long to keep each light on (in seconds)
+LIGHT_ON_PERIOD = [1.0, 0.75]
 ## number of bangs per routine 
 ##     (this can be dynamic, based on length of tweet, for example)
 NUMBER_OF_BANGS = 10
@@ -31,10 +33,12 @@ NUMBER_OF_BANGS = 10
 ## different states motors can be in
 STATE_WAITING, STATE_BANGING_FORWARD, STATE_BANGING_BACK = range(3)
 ## state/time variables
-currentState = STATE_WAITING
+currentMotorState = STATE_WAITING
 bangsLeft = 0
 lastTwitterCheck = time.time()
 lastMotorUpdate = time.time()
+currentLightState = [False, False]
+lastLightUpdate = [time.time(), time.time()]
 
 ## tweet queue
 tweetQueue = Queue.Queue()
@@ -42,17 +46,16 @@ tweetQueue = Queue.Queue()
 ######### GPIO stuff
 MOTOR_FWD = 17
 MOTOR_BACK = 18
-LIGHT_0 = 22
-LIGHT_1 = 23
+LIGHT_PIN = [22, 23]
 #GPIO.setmode(GPIO.BCM)
 #GPIO.setup(MOTOR_FWD, GPIO.OUT)
 #GPIO.setup(MOTOR_BACK, GPIO.OUT)
-#GPIO.setup(LIGHT_0, GPIO.OUT)
-#GPIO.setup(LIGHT_1, GPIO.OUT)
+#GPIO.setup(LIGHT_PIN[0], GPIO.OUT)
+#GPIO.setup(LIGHT_PIN[1], GPIO.OUT)
 #GPIO.output(MOTOR_FWD, False)
 #GPIO.output(MOTOR_BACK, False)
-#GPIO.output(LIGHT_0, False)
-#GPIO.output(LIGHT_1, False)
+#GPIO.output(LIGHT_PIN[0], False)
+#GPIO.output(LIGHT_PIN[1], False)
 
 print "WAITING"
 
@@ -65,7 +68,7 @@ while True:
 
     ## state machine for motors
     ## if motor is idle, and there are tweets to process, start dance
-    if ((currentState==STATE_WAITING) and
+    if ((currentMotorState==STATE_WAITING) and
         (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
         (not tweetQueue.empty())):
         print "BANG FWD"
@@ -73,34 +76,44 @@ while True:
         #   TODO: display message?
         #   GPIO.output(MOTOR_FWD, True)
         #   GPIO.output(MOTOR_BACK, False)
-        currentState=STATE_BANGING_FORWARD
+        currentMotorState=STATE_BANGING_FORWARD
         lastMotorUpdate = time.time()
         bangsLeft = NUMBER_OF_BANGS
     ## if motor0 has been on for a while, reverse it
-    elif ((currentState==STATE_BANGING_FORWARD) and
+    elif ((currentMotorState==STATE_BANGING_FORWARD) and
           (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
           (bangsLeft>0)):
         print "BANG BACK"
         #   GPIO.output(MOTOR_FWD, False)
         #   GPIO.output(MOTOR_BACK, True)
-        currentState=STATE_BANGING_BACK
+        currentMotorState=STATE_BANGING_BACK
         lastMotorUpdate = time.time()
         bangsLeft -= 1
     ## if motor1 has been on for a while, reverse it
-    elif ((currentState==STATE_BANGING_BACK) and
+    elif ((currentMotorState==STATE_BANGING_BACK) and
           (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
           (bangsLeft>0)):
         print "BANG FWD"
         #   GPIO.output(MOTOR_FWD, True)
         #   GPIO.output(MOTOR_BACK, False)
-        currentState=STATE_BANGING_FORWARD
+        currentMotorState=STATE_BANGING_FORWARD
         lastMotorUpdate = time.time()
     ## if no more bangs left
-    elif((currentState != STATE_WAITING) and 
+    elif((currentMotorState != STATE_WAITING) and 
          (bangsLeft <= 0) and 
          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
         print "WAITING"
         #   GPIO.output(MOTOR_FWD, False)
         #   GPIO.output(MOTOR_BACK, False)
-        currentState=STATE_WAITING
+        #   GPIO.output(LIGHT_PIN[0], False)
+        #   GPIO.output(LIGHT_PIN[1], False)
+        currentMotorState=STATE_WAITING
         lastMotorUpdate = time.time()
+
+    ## state machine for lights
+    ## if banging, flicker the lights
+    if (currentMotorState != STATE_WAITING):
+        for i in range(0,2):
+            if (time.time()-lastLightUpdate[i] > LIGHT_ON_PERIOD[i]):
+                currentLightState[i] = not currentLightState[i]
+                #   GPIO.output(LIGHT_PIN[i], False)
