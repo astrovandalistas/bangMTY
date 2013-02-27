@@ -13,9 +13,11 @@ Dependencies:
 	* ./build
 
 * pygame (sudo apt-get install python-pygame)
+
 * Tweepy (https://github.com/tweepy/tweepy)
 	* sudo easy_install pip
 	* sudo pip install tweepy
+
 * Twython (https://github.com/ryanmcgrath/twython)
 	* sudo easy_install twython
 
