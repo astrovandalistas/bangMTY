@@ -3,7 +3,8 @@
 #import RPi.GPIO as GPIO
 import time
 import Queue
-import wx
+import pygame
+from pygame.locals import *
 
 ## TODO: 
 #  - TWITTER: https://github.com/tweepy/tweepy
@@ -39,11 +40,11 @@ lastMotorCheck = time.time()
 tweetQueue = Queue.Queue()
 
 ######### GPIO stuff
+MOTOR_FWD = 17
+MOTOR_BACK = 18
+LIGHT_0 = 22
+LIGHT_1 = 23
 #GPIO.setmode(GPIO.BCM)
-#MOTOR_FWD = 17
-#MOTOR_BACK = 18
-#LIGHT_0 = 22
-#LIGHT_1 = 23
 #GPIO.setup(MOTOR_FWD, GPIO.OUT)
 #GPIO.setup(MOTOR_BACK, GPIO.OUT)
 #GPIO.setup(LIGHT_0, GPIO.OUT)
@@ -55,11 +56,7 @@ tweetQueue = Queue.Queue()
 
 print "WAITING"
 
-##while True:
-def motorLoop(event):
-    global currentState, bangsLeft
-    global lastTwitterCheck, lastMotorCheck, tweetQueue
-
+while True:
     ## twitter check. not needed if using streams
     if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
         # check twitter here
@@ -107,22 +104,3 @@ def motorLoop(event):
         #   GPIO.output(MOTOR_BACK, False)
         currentState=STATE_WAITING
         lastMotorCheck = time.time()
-
-
-class Frame(wx.Frame):
-    def __init__(self):
-        wx.Frame.__init__(self, None)
-        self.panel = wx.Panel(self)
-        self.panel.BackgroundColour = wx.RED
-        self.panel.Bind(wx.EVT_LEFT_UP, self.onClick)
-        self.panel.Bind(wx.EVT_IDLE, motorLoop)
-
-    def onClick(self, event):
-        global tweetQueue
-        self.panel.BackgroundColour = wx.GREEN
-        tweetQueue.put("fofofofof")
-
-app = wx.App()
-frame = Frame()
-frame.Show()
-app.MainLoop()
