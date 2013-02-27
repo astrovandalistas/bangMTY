@@ -7,12 +7,16 @@ Dependencies:
 	- git clone https://github.com/WiringPi/WiringPi-Python.git
 	- cd WiringPi-Python
 	- git submodule update --init
-	- open WiringPi/wiringPi/piNes.c 
-	- change #include \<wiringPi.h\> to #include "wiringPi.h" in WiringPi/wiringPi/piNes.c
+	- open WiringPi/wiringPi/piNes.c in a text editor and change #include \<wiringPi.h\> to #include "wiringPi.h" in WiringPi/wiringPi/piNes.c
 	- sudo python setup.py install
 	- cd WiringPi
 	- ./build
 
 - pygame (sudo apt-get install python-pygame)
+- Tweepy (https://github.com/tweepy/tweepy)
+	- sudo easy_install pip
+	- sudo pip install tweepy
+- Twython (https://github.com/ryanmcgrath/twython)
+	- sudo easy_install twython
 
 More info here: http://astrovandalistas.cc/ast/
