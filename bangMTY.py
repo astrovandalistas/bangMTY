@@ -54,25 +54,38 @@ lastLightUpdate = [time.time(), time.time()]
 tweetQueue = Queue.Queue()
 
 ######### twitter init
-# read secrets from file
+## get tweets that come after this
+lastId = 305155172542324700
+## with these terms
+SEARCH_TERM = "#bangMTY #BangMTY #bangMty #BangMty #bangmty #Bangmty #BANGMTY"
+
+## read secrets from file
 inFile = open('oauth.txt', 'r')
 mSecrets = {}
 for line in inFile:
     (k,v) = line.split()
     mSecrets[k] = v
 
+## authenticate
 mTwitter = Twython(twitter_token = mSecrets['CONSUMER_KEY'],
                    twitter_secret = mSecrets['CONSUMER_SECRET'],
                    oauth_token = mSecrets['ACCESS_TOKEN'],
                    oauth_token_secret = mSecrets['ACCESS_SECRET'])
 
-## mResults = mTwitter.search(q="WebsDotCom", rpp="5")
-## for tweet in mResults["statuses"]:
-##     print ("Tweet from @%s at %s" % 
-##            (tweet['user']['screen_name'].encode('utf-8'),
-##             tweet['created_at']))
-##     print tweet['text'].encode('utf-8'),"\n"
+## sample search query
+mResults = mTwitter.search(q=SEARCH_TERM, include_entities="false",
+                           count="50", result_type="recent",
+                           since_id=lastId)
 
+## parse results and print stuff
+for tweet in mResults["statuses"]:
+    print ("Tweet %s from @%s at %s" % 
+           (tweet['id'],
+            tweet['user']['screen_name'].encode('utf-8'),
+            tweet['created_at']))
+    print tweet['text'].encode('utf-8'),"\n"
+    if (int(tweet['id']) > lastId):
+        lastId = int(tweet['id'])
 
 ######### GPIO stuff
 MOTOR_PIN = [17, 18]
