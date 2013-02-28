@@ -6,6 +6,7 @@ import pygame
 from pygame.locals import *
 import os
 import wiringpi
+from twython import Twython
 
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
@@ -51,6 +52,27 @@ lastLightUpdate = [time.time(), time.time()]
 
 ## tweet queue
 tweetQueue = Queue.Queue()
+
+######### twitter init
+# read secrets from file
+inFile = open('oauth.txt', 'r')
+mSecrets = {}
+for line in inFile:
+    (k,v) = line.split()
+    mSecrets[k] = v
+
+mTwitter = Twython(twitter_token = mSecrets['CONSUMER_KEY'],
+                   twitter_secret = mSecrets['CONSUMER_SECRET'],
+                   oauth_token = mSecrets['ACCESS_TOKEN'],
+                   oauth_token_secret = mSecrets['ACCESS_SECRET'])
+
+## mResults = mTwitter.search(q="WebsDotCom", rpp="5")
+## for tweet in mResults["statuses"]:
+##     print ("Tweet from @%s at %s" % 
+##            (tweet['user']['screen_name'].encode('utf-8'),
+##             tweet['created_at']))
+##     print tweet['text'].encode('utf-8'),"\n"
+
 
 ######### GPIO stuff
 MOTOR_PIN = [17, 18]
