@@ -55,6 +55,7 @@ tweetQueue = Queue.Queue()
 
 ######### twitter init
 ## get tweets that come after this
+## a post by @LemurLimon on 2013/02/23
 lastId = 305155172542324700
 ## with these terms
 SEARCH_TERM = "#bangMTY #BangMTY #bangMty #BangMty #bangmty #Bangmty #BANGMTY"
@@ -129,8 +130,24 @@ try:
 
         ## twitter check. not needed if using streams
         if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
-            # TODO: check twitter here
-            # build queue
+            # check twitter
+            mResults = mTwitter.search(q=SEARCH_TERM, include_entities="false",
+                                       count="50", result_type="recent",
+                                       since_id=lastId)
+
+            ## parse results, print stuff, push on queue
+            for tweet in mResults["statuses"]:
+                ## print
+                print ("pushing %s from @%s" %
+                       (tweet['text'].encode('utf-8'),
+                        tweet['user']['screen_name'].encode('utf-8')))
+                ## push
+                tweetQueue.put(tweet['text'].encode('utf-8'))
+                ## update lastId for next searches
+                if (int(tweet['id']) > lastId):
+                    lastId = int(tweet['id'])
+            
+            ## update timer
             lastTwitterCheck = time.time()
     
         ## state machine for motors
