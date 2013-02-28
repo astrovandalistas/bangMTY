@@ -50,23 +50,22 @@ lastLightUpdate = [time.time(), time.time()]
 tweetQueue = Queue.Queue()
 
 ######### GPIO stuff
-MOTOR_FWD = 17
-MOTOR_BACK = 18
+MOTOR_PIN = [17, 18]
 LIGHT_PIN = [22, 23]
 
-os.system("gpio export "+str(MOTOR_FWD)+" out")
-os.system("gpio export "+str(MOTOR_BACK)+" out")
+os.system("gpio export "+str(MOTOR_PIN[0])+" out")
+os.system("gpio export "+str(MOTOR_PIN[1])+" out")
 os.system("gpio export "+str(LIGHT_PIN[0])+" out")
 os.system("gpio export "+str(LIGHT_PIN[1])+" out")
 
 gpio = wiringpi.GPIO(wiringpi.GPIO.WPI_MODE_SYS)
-gpio.pinMode(MOTOR_FWD,gpio.OUTPUT)
-gpio.pinMode(MOTOR_BACK,gpio.OUTPUT)
+gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
+gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
 gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
 gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
 
-gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
-gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
 gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
 gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
@@ -104,8 +103,8 @@ try:
             print "BANG FWD"
             tweetText = tweetQueue.get()
             # TODO: display message?
-            gpio.digitalWrite(MOTOR_FWD,gpio.HIGH)
-            gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+            gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
+            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
             currentMotorState=STATE_BANGING_FORWARD
             lastMotorUpdate = time.time()
             bangsLeft = NUMBER_OF_BANGS
@@ -114,8 +113,8 @@ try:
               (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
               (bangsLeft>0)):
             print "BANG BACK"
-            gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
-            gpio.digitalWrite(MOTOR_BACK,gpio.HIGH)
+            gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+            gpio.digitalWrite(MOTOR_PIN[1],gpio.HIGH)
             currentMotorState=STATE_BANGING_BACK
             lastMotorUpdate = time.time()
             bangsLeft -= 1
@@ -124,8 +123,8 @@ try:
               (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
               (bangsLeft>0)):
             print "BANG FWD"
-            gpio.digitalWrite(MOTOR_FWD,gpio.HIGH)
-            gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+            gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
+            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
             currentMotorState=STATE_BANGING_FORWARD
             lastMotorUpdate = time.time()
         ## if no more bangs left
@@ -133,8 +132,8 @@ try:
              (bangsLeft <= 0) and 
              (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
             print "WAITING"
-            gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
-            gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+            gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
             gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
             gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
             currentMotorState=STATE_WAITING
@@ -151,8 +150,8 @@ try:
 
 except KeyboardInterrupt:
     print "Cleaning up GPIO"
-    gpio.digitalWrite(MOTOR_FWD,gpio.LOW)
-    gpio.digitalWrite(MOTOR_BACK,gpio.LOW)
+    gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+    gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
     gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
     gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
