@@ -1,5 +1,7 @@
 This is Python code written to run on a RaspberryPi and control v2.0 of the Arma Sonora Telematica. It's a simple state machine that gets tweets with a specific hashtag and controls a motor and some lights through relays connected to the GPIO pins.
 
+More info here: http://astrovandalistas.cc/ast/
+
 Dependencies:
 * WiringPi-Python (https://github.com/WiringPi/WiringPi-Python)
 	* sudo apt-get install python-dev
@@ -21,4 +23,7 @@ Dependencies:
 * Twython (https://github.com/ryanmcgrath/twython)
 	* sudo easy_install twython
 
-More info here: http://astrovandalistas.cc/ast/
+After installing all dependencies:
+* git clone https://github.com/thiagohersan/bangMTYRpiPy.git
+* cd bangMTYRpiPy
+* ./bangMTY.py
