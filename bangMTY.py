@@ -17,7 +17,7 @@ else:
             self.LOW = False
             self.HIGH = True
         def digitalWrite(self,pin=0, val=False):
-            print ""
+            anEmptyStatement = ""
     gpio = Gpio()
 
 if not pygame.font: print 'Warning, fonts disabled'
