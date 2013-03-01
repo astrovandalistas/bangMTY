@@ -80,11 +80,6 @@ for line in inFile:
     mSecrets[k] = v
 
 ## authenticate
-print mSecrets['CONSUMER_KEY']
-print mSecrets['CONSUMER_SECRET']
-print mSecrets['ACCESS_TOKEN']
-print mSecrets['ACCESS_SECRET']
-
 mTwitter = Twython(twitter_token = mSecrets['CONSUMER_KEY'],
                    twitter_secret = mSecrets['CONSUMER_SECRET'],
                    oauth_token = mSecrets['ACCESS_TOKEN'],
