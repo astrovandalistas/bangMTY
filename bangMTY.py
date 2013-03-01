@@ -7,22 +7,30 @@ from pygame.locals import *
 import os, platform
 from twython import Twython
 
-# pi-specific code
-if ("arm" in platform.machine()):
+if not pygame.font: print 'Warning, fonts disabled'
+if not pygame.mixer: print 'Warning, sound disabled'
+
+HAS_WIRINGPI = True
+try:
     import wiringpi
+except ImportError:
+    HAS_WIRINGPI = False
+
+# pi-specific code
+if (HAS_WIRINGPI):
+    gpio = wiringpi.GPIO(wiringpi.GPIO.WPI_MODE_SYS)
 else:
     # define gpio class with gpio.LOW, gpio.HIGH, gpio.digitalWrite
     class Gpio(object):
         def __init__(self):
             self.LOW = False
             self.HIGH = True
+            self.OUTPUT = 0
         def digitalWrite(self,pin=0, val=False):
             anEmptyStatement = ""
+        def pinMode(self,pin=0, val=False):
+            anEmptyStatement = ""
     gpio = Gpio()
-
-if not pygame.font: print 'Warning, fonts disabled'
-if not pygame.mixer: print 'Warning, sound disabled'
-
 
 #  - GPIO: http://bit.ly/JTlFE3 (elinux.org wiki)
 #          http://bit.ly/QI8sAU (wiring pi)
@@ -104,22 +112,20 @@ for tweet in mResults["statuses"]:
 MOTOR_PIN = [17, 18]
 LIGHT_PIN = [22, 23]
 
-if ("arm" in platform.machine()):
-    os.system("gpio export "+str(MOTOR_PIN[0])+" out")
-    os.system("gpio export "+str(MOTOR_PIN[1])+" out")
-    os.system("gpio export "+str(LIGHT_PIN[0])+" out")
-    os.system("gpio export "+str(LIGHT_PIN[1])+" out")
+os.system("gpio export "+str(MOTOR_PIN[0])+" out 2> /dev/null")
+os.system("gpio export "+str(MOTOR_PIN[1])+" out 2> /dev/null")
+os.system("gpio export "+str(LIGHT_PIN[0])+" out 2> /dev/null")
+os.system("gpio export "+str(LIGHT_PIN[1])+" out 2> /dev/null")
 
-    gpio = wiringpi.GPIO(wiringpi.GPIO.WPI_MODE_SYS)
-    gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
-    gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
-    gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
-    gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
+gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
+gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
+gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
+gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
 
-    gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-    gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-    gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
-    gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
+gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
 ######### Windowing stuff
 pygame.init()
