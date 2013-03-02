@@ -1,26 +1,37 @@
 #! /usr/bin/env python
 
-import time
+## References:
+#  - GPIO: http://bit.ly/JTlFE3 (elinux.org wiki)
+#          http://bit.ly/QI8sAU (wiring pi)
+#          http://bit.ly/MDEJVo (wiringpi-python)
+#  - TWITTER: https://github.com/tweepy/tweepy
+#             https://github.com/ryanmcgrath/twython
+
+## TODO: 
+#  - GRAPHICS: http://bit.ly/96VoEC (pygame)
+
+
+import os, sys, platform, time
 import Queue
 import pygame
 from pygame.locals import *
-import os, sys, platform
 from twython import Twython
 
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
 
+## import wiringpi lib if available
 HAS_WIRINGPI = True
 try:
     import wiringpi
 except ImportError:
     HAS_WIRINGPI = False
 
-## pi-specific code
+## setup GPIO object (real or fake)
 if (HAS_WIRINGPI):
     gpio = wiringpi.GPIO(wiringpi.GPIO.WPI_MODE_SYS)
 else:
-    # define gpio class with gpio.LOW, gpio.HIGH, gpio.digitalWrite
+    # define fake gpio class with gpio.LOW, gpio.HIGH, gpio.digitalWrite, etc
     class Gpio(object):
         def __init__(self):
             self.LOW = False
@@ -32,22 +43,33 @@ else:
             anEmptyStatement = ""
     gpio = Gpio()
 
-## for cleaning up the gpio pins on exit
+
+######### setup GPIO pins
+MOTOR_PIN = [17, 18]
+LIGHT_PIN = [22, 23]
+
+os.system("gpio export "+str(MOTOR_PIN[0])+" out 2> /dev/null")
+os.system("gpio export "+str(MOTOR_PIN[1])+" out 2> /dev/null")
+os.system("gpio export "+str(LIGHT_PIN[0])+" out 2> /dev/null")
+os.system("gpio export "+str(LIGHT_PIN[1])+" out 2> /dev/null")
+
+gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
+gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
+gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
+gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
+
+gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
+
+## for cleaning up the GPIO pins on exit
 def cleanUpGpio():
     print "Cleaning up GPIO"
     gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
     gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
     gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
     gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
-
-#  - GPIO: http://bit.ly/JTlFE3 (elinux.org wiki)
-#          http://bit.ly/QI8sAU (wiring pi)
-#          http://bit.ly/MDEJVo (wiringpi-python)
-#  - TWITTER: https://github.com/tweepy/tweepy
-#             https://github.com/ryanmcgrath/twython
-
-## TODO: 
-#  - GRAPHICS: http://bit.ly/96VoEC (pygame)
 
 
 ######### time constants
@@ -73,9 +95,9 @@ NUMBER_OF_BANGS = 10
 ## state/time variables
 currentMotorState = STATE_WAITING
 bangsLeft = 0
+currentLightState = [False, False]
 lastTwitterCheck = time.time()
 lastMotorUpdate = time.time()
-currentLightState = [False, False]
 lastLightUpdate = [time.time(), time.time()]
 
 ## tweet queue
@@ -90,24 +112,24 @@ SEARCH_TERM = "#bangMTY #BangMTY #bangMty #BangMty #bangmty #Bangmty #BANGMTY"
 
 ## read secrets from file
 inFile = open('oauth.txt', 'r')
-mSecrets = {}
+secrets = {}
 for line in inFile:
     (k,v) = line.split()
-    mSecrets[k] = v
+    secrets[k] = v
 
 ## authenticate
-mTwitter = Twython(twitter_token = mSecrets['CONSUMER_KEY'],
-                   twitter_secret = mSecrets['CONSUMER_SECRET'],
-                   oauth_token = mSecrets['ACCESS_TOKEN'],
-                   oauth_token_secret = mSecrets['ACCESS_SECRET'])
+twitter = Twython(twitter_token = secrets['CONSUMER_KEY'],
+                   twitter_secret = secrets['CONSUMER_SECRET'],
+                   oauth_token = secrets['ACCESS_TOKEN'],
+                   oauth_token_secret = secrets['ACCESS_SECRET'])
 
 ## sample search query
-mResults = mTwitter.search(q=SEARCH_TERM, include_entities="false",
-                           count="50", result_type="recent",
-                           since_id=lastId)
+twitterResults = twitter.search(q=SEARCH_TERM, include_entities="false",
+                                count="50", result_type="recent",
+                                since_id=lastId)
 
-## parse results and print stuff
-for tweet in mResults["statuses"]:
+## parse results and print tweets (this is mostly for testing...)
+for tweet in twitterResults["statuses"]:
     print ("Tweet %s from @%s at %s" % 
            (tweet['id'],
             tweet['user']['screen_name'].encode('utf-8'),
@@ -116,24 +138,6 @@ for tweet in mResults["statuses"]:
     if (int(tweet['id']) > lastId):
         lastId = int(tweet['id'])
 
-######### GPIO stuff
-MOTOR_PIN = [17, 18]
-LIGHT_PIN = [22, 23]
-
-os.system("gpio export "+str(MOTOR_PIN[0])+" out 2> /dev/null")
-os.system("gpio export "+str(MOTOR_PIN[1])+" out 2> /dev/null")
-os.system("gpio export "+str(LIGHT_PIN[0])+" out 2> /dev/null")
-os.system("gpio export "+str(LIGHT_PIN[1])+" out 2> /dev/null")
-
-gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
-gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
-gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
-gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
-
-gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
-gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
 ######### Windowing stuff
 pygame.init()
@@ -144,9 +148,12 @@ background = pygame.Surface(screen.get_size())
 background = background.convert()
 background.fill((250, 250, 250))
 
+font = pygame.font.Font(None, 256)
+
 screen.blit(background, (0, 0))
 pygame.display.flip()
 
+######### The Loop!!
 try:
     print "WAITING"
     while True:
@@ -163,12 +170,13 @@ try:
         ## twitter check. not needed if using streams
         if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
             # check twitter
-            mResults = mTwitter.search(q=SEARCH_TERM, include_entities="false",
-                                       count="50", result_type="recent",
-                                       since_id=lastId)
+            twitterResults = twitter.search(q=SEARCH_TERM, 
+                                            include_entities="false",
+                                            count="50", result_type="recent",
+                                            since_id=lastId)
 
             ## parse results, print stuff, push on queue
-            for tweet in mResults["statuses"]:
+            for tweet in twitterResults["statuses"]:
                 ## print
                 print ("pushing %s from @%s" %
                        (tweet['text'].encode('utf-8'),
@@ -189,7 +197,8 @@ try:
             (not tweetQueue.empty())):
             print "BANG FWD"
             tweetText = tweetQueue.get()
-            # TODO: display message?
+            # display message
+            ## TODO: HERE
             gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
             gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
             currentMotorState=STATE_BANGING_FORWARD
