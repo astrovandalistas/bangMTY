@@ -4,7 +4,7 @@ import time
 import Queue
 import pygame
 from pygame.locals import *
-import os, platform
+import os, sys, platform
 from twython import Twython
 
 if not pygame.font: print 'Warning, fonts disabled'
@@ -16,7 +16,7 @@ try:
 except ImportError:
     HAS_WIRINGPI = False
 
-# pi-specific code
+## pi-specific code
 if (HAS_WIRINGPI):
     gpio = wiringpi.GPIO(wiringpi.GPIO.WPI_MODE_SYS)
 else:
@@ -31,6 +31,14 @@ else:
         def pinMode(self,pin=0, val=False):
             anEmptyStatement = ""
     gpio = Gpio()
+
+## for cleaning up the gpio pins on exit
+def cleanUpGpio():
+    print "Cleaning up GPIO"
+    gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+    gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+    gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+    gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
 #  - GPIO: http://bit.ly/JTlFE3 (elinux.org wiki)
 #          http://bit.ly/QI8sAU (wiring pi)
@@ -147,6 +155,10 @@ try:
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
                 tweetQueue.put("messaged!!!")
+            elif (event.type == QUIT or
+                  (event.type == KEYDOWN and event.key == K_ESCAPE)):
+                cleanUpGpio()
+                sys.exit()
 
         ## twitter check. not needed if using streams
         if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
@@ -244,9 +256,5 @@ try:
             time.sleep(0.017 - loopTime)
 
 except KeyboardInterrupt:
-    print "Cleaning up GPIO"
-    gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-    gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-    gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
-    gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
+    cleanUpGpio()
 
