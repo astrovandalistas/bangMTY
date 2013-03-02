@@ -142,6 +142,7 @@ pygame.display.flip()
 try:
     print "WAITING"
     while True:
+        loopStart = time.time()
         ## handle events
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
@@ -237,6 +238,10 @@ try:
                     currentLightState[i] = not currentLightState[i]
                     gpio.digitalWrite(LIGHT_PIN[i],currentLightState[i])
                     lastLightUpdate[i] = time.time()
+        ## keep it from looping faster than ~60 times per second
+        loopTime = time.time()-loopStart
+        if loopTime < 0.017:
+            time.sleep(0.017 - loopTime)
 
 except KeyboardInterrupt:
     print "Cleaning up GPIO"
