@@ -6,8 +6,6 @@
 #          http://bit.ly/MDEJVo (wiringpi-python)
 #  - TWITTER: https://github.com/tweepy/tweepy
 #             https://github.com/ryanmcgrath/twython
-
-## TODO: 
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
 
 
