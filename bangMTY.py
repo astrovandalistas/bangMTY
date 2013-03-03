@@ -77,7 +77,7 @@ def cleanUpGpio():
 TWITTER_CHECK_PERIOD = 10
 ## how often to check queue for new tweets to be processed (in seconds)
 ##     or, how much time between bang routines
-QUEUE_CHECK_PERIOD = 10
+QUEUE_CHECK_PERIOD = 1
 ## how long to keep motors on (in seconds)
 MOTOR_ON_PERIOD = 0.5
 ## how long to wait between turning on motors (in seconds)
@@ -87,6 +87,10 @@ LIGHT_ON_PERIOD = [0.25, 0.333]
 ## number of bangs per routine 
 ##     (this can be dynamic, based on length of tweet, for example)
 NUMBER_OF_BANGS = 10
+## font size (height in pixels)
+FONT_SIZE = 180
+## how long to keep text in same position before moving it (in seconds)
+TEXT_SCROLL_PERIOD = 0.1
 
 ######### state machine
 ## different states motors can be in
@@ -99,6 +103,7 @@ currentLightState = [False, False]
 lastTwitterCheck = time.time()
 lastMotorUpdate = time.time()
 lastLightUpdate = [time.time(), time.time()]
+lastTextUpdate = time.time()
 
 ## tweet queue
 tweetQueue = Queue.Queue()
@@ -141,15 +146,15 @@ for tweet in twitterResults["statuses"]:
 
 ######### Windowing stuff
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption('Test')
 
 background = pygame.Surface(screen.get_size())
 background = background.convert()
-background.fill((250, 250, 250))
+background.fill((0,0,0))
 
-font = pygame.font.Font(None, 256)
-text = font.render("", 1, (0,0,0))
+font = pygame.font.Font("./LEDBOARDREVERSED.ttf", FONT_SIZE)
+text = font.render("", 1, (250,0,0))
 textPos = text.get_rect(right=-1)
 
 screen.blit(background, (0, 0))
@@ -164,18 +169,20 @@ try:
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
                 tweetQueue.put("messaged!!!")
-            elif (event.type == QUIT or
+            elif ((event.type == QUIT) or
                   (event.type == KEYDOWN and event.key == K_ESCAPE)):
                 cleanUpGpio()
                 sys.exit()
 
         ## blit stuff
-        if(textPos.right > -1):
-            textPos.right -= 1
-            background.fill((250,250,250))
+        if ((textPos.right > -1) and
+            (time.time()-lastTextUpdate > TEXT_SCROLL_PERIOD)):
+            textPos.right -= FONT_SIZE/9
+            background.fill((0,0,0))
             background.blit(text, textPos)
             screen.blit(background, (0,0))
             pygame.display.flip()
+            lastTextUpdate = time.time()
 
         ## twitter check. not needed if using streams
         if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
@@ -201,14 +208,16 @@ try:
             lastTwitterCheck = time.time()
     
         ## state machine for motors
-        ## if motor is idle, and there are tweets to process, start dance
+        ## if motor is idle, no text is scrolling and there are 
+        ##     tweets to process, then start dance
         if ((currentMotorState==STATE_WAITING) and
             (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
+            (textPos.right < 0) and
             (not tweetQueue.empty())):
             print "BANG FWD"
             tweetText = tweetQueue.get()
             # display message
-            text = font.render(tweetText, 1, (0,0,0))
+            text = font.render(tweetText, 1, (250,0,0))
             textPos = text.get_rect(left=background.get_width(),
                                     centery=background.get_height()/2)
             ### background.blit(text, textPos)
