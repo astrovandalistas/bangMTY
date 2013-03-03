@@ -149,6 +149,8 @@ background = background.convert()
 background.fill((250, 250, 250))
 
 font = pygame.font.Font(None, 256)
+text = font.render("", 1, (0,0,0))
+textPos = text.get_rect(right=-1)
 
 screen.blit(background, (0, 0))
 pygame.display.flip()
@@ -166,6 +168,14 @@ try:
                   (event.type == KEYDOWN and event.key == K_ESCAPE)):
                 cleanUpGpio()
                 sys.exit()
+
+        ## blit stuff
+        if(textPos.right > -1):
+            textPos.right -= 1
+            background.fill((250,250,250))
+            background.blit(text, textPos)
+            screen.blit(background, (0,0))
+            pygame.display.flip()
 
         ## twitter check. not needed if using streams
         if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
@@ -198,7 +208,11 @@ try:
             print "BANG FWD"
             tweetText = tweetQueue.get()
             # display message
-            ## TODO: HERE
+            text = font.render(tweetText, 1, (0,0,0))
+            textPos = text.get_rect(left=background.get_width(),
+                                    centery=background.get_height()/2)
+            ### background.blit(text, textPos)
+            # set pins
             gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
             gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
             currentMotorState=STATE_BANGING_FORWARD
