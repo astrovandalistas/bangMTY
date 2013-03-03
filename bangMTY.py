@@ -8,6 +8,9 @@
 #             https://github.com/ryanmcgrath/twython
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
 
+## TODO:
+## - Limit tweets to 70 characters
+## - deal with utf-8 special characters
 
 import os, sys, platform, time
 import Queue
@@ -146,6 +149,7 @@ for tweet in twitterResults["statuses"]:
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption('Test')
+pygame.mouse.set_visible(False)
 
 background = pygame.Surface(screen.get_size())
 background = background.convert()
