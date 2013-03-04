@@ -139,7 +139,7 @@ twitterResults = twitter.search(q=SEARCH_TERM, include_entities="false",
 for tweet in twitterResults["statuses"]:
     print ("Tweet %s from @%s at %s" % 
            (tweet['id'],
-            tweet['user']['screen_name'].encode('utf-8'),
+            tweet['user']['screen_name'],
             tweet['created_at']))
     print tweet['text'],"\n"
     if (int(tweet['id']) > lastId):
@@ -201,7 +201,7 @@ try:
                 ## print
                 print ("pushing %s from @%s" %
                        (tweet['text'],
-                        tweet['user']['screen_name'].encode('utf-8')))
+                        tweet['user']['screen_name']))
                 ## push
                 tweetQueue.put(tweet['text'])
                 ## update lastId for next searches
