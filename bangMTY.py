@@ -12,6 +12,7 @@
 
 ## TODO:
 ## - Limit tweets to 70 characters
+## - add Main function ??
 
 import os, sys, platform, time
 import Queue
@@ -46,24 +47,26 @@ else:
     gpio = Gpio()
 
 
-######### setup GPIO pins
+######### GPIO pins
 MOTOR_PIN = [17, 18]
 LIGHT_PIN = [22, 23]
 
-os.system("gpio export "+str(MOTOR_PIN[0])+" out 2> /dev/null")
-os.system("gpio export "+str(MOTOR_PIN[1])+" out 2> /dev/null")
-os.system("gpio export "+str(LIGHT_PIN[0])+" out 2> /dev/null")
-os.system("gpio export "+str(LIGHT_PIN[1])+" out 2> /dev/null")
+## for setting up the GPIO pins
+def setUpGpio():
+    os.system("gpio export "+str(MOTOR_PIN[0])+" out 2> /dev/null")
+    os.system("gpio export "+str(MOTOR_PIN[1])+" out 2> /dev/null")
+    os.system("gpio export "+str(LIGHT_PIN[0])+" out 2> /dev/null")
+    os.system("gpio export "+str(LIGHT_PIN[1])+" out 2> /dev/null")
 
-gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
-gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
-gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
-gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
+    gpio.pinMode(MOTOR_PIN[0],gpio.OUTPUT)
+    gpio.pinMode(MOTOR_PIN[1],gpio.OUTPUT)
+    gpio.pinMode(LIGHT_PIN[0],gpio.OUTPUT)
+    gpio.pinMode(LIGHT_PIN[1],gpio.OUTPUT)
 
-gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
-gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
+    gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+    gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+    gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+    gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
 
 ## for cleaning up the GPIO pins on exit
 def cleanUpGpio():
@@ -111,9 +114,12 @@ lastTextUpdate = time.time()
 tweetQueue = Queue.Queue()
 
 ######### twitter init
+twitter = None
+twitterAuthenticated = False
+twitterResults = {}
 ## get tweets that come after this
 ## a post by @LemurLimon on 2013/02/23
-lastId = 305155172542324700
+largestTweetId = 305155172542324700
 ## with these terms
 SEARCH_TERM = "#bangMTY #BangMTY #bangMty #BangMty #bangmty #Bangmty #BANGMTY"
 
@@ -125,47 +131,74 @@ for line in inFile:
     secrets[k] = v
 
 ## authenticate
-twitter = Twython(twitter_token = secrets['CONSUMER_KEY'],
-                   twitter_secret = secrets['CONSUMER_SECRET'],
-                   oauth_token = secrets['ACCESS_TOKEN'],
-                   oauth_token_secret = secrets['ACCESS_SECRET'])
+def authenticateTwitter():
+    global twitter
+    try:
+        twitter = Twython(twitter_token = secrets['CONSUMER_KEY'],
+                          twitter_secret = secrets['CONSUMER_SECRET'],
+                          oauth_token = secrets['ACCESS_TOKEN'],
+                          oauth_token_secret = secrets['ACCESS_SECRET'])
+        twitterAuthenticated = True
+    except:
+        twitter = None
+        twitterAuthenticated = False
 
-## sample search query
-twitterResults = twitter.search(q=SEARCH_TERM, include_entities="false",
-                                count="50", result_type="recent",
-                                since_id=lastId)
+## query twitter
+def searchTwitter():
+    global twitterResults
+    if ((not twitterAuthenticated) or (twitter is None)):
+        authenticateTwitter()
+    try:
+        twitterResults = twitter.search(q=SEARCH_TERM, include_entities="false",
+                                       count="50", result_type="recent",
+                                       since_id=largestTweetId)
+    except:
+        twitterResults = {}
 
-## parse results and print tweets (this is mostly for testing...)
-for tweet in twitterResults["statuses"]:
-    print ("Tweet %s from @%s at %s" % 
-           (tweet['id'],
-            tweet['user']['screen_name'],
-            tweet['created_at']))
-    print tweet['text'],"\n"
-    if (int(tweet['id']) > lastId):
-        lastId = int(tweet['id'])
-
+## parse results and get largest Id for tweets that came before running the program
+def getLargestTweetId(theTweets):
+    global largestTweetId
+    for tweet in theTweets["statuses"]:
+        print ("Tweet %s from @%s at %s" % 
+               (tweet['id'],
+                tweet['user']['screen_name'],
+                tweet['created_at']))
+        print tweet['text'],"\n"
+        if (int(tweet['id']) > largestTweetId):
+            largestTweetId = int(tweet['id'])
 
 ######### Windowing stuff
-pygame.init()
-screen = pygame.display.set_mode((1280, 720))
-pygame.display.set_caption('Test')
-pygame.mouse.set_visible(False)
+screen = None
+background = None
+font = None
+text = None
+textpos = None
 
-background = pygame.Surface(screen.get_size())
-background = background.convert()
-background.fill((0,0,0))
+def setUpWindowing():
+    global screen, background, font, text, textPos
 
-#font = pygame.font.Font("./LEDBOARDREVERSED.ttf", FONT_SIZE)
-font = pygame.font.Font("./otis.ttf", FONT_SIZE)
-text = font.render("", 1, (250,0,0))
-textPos = text.get_rect(right=-1)
+    pygame.init()
+    screen = pygame.display.set_mode((1280, 720))
+    pygame.display.set_caption('Test')
+    pygame.mouse.set_visible(False)
 
-screen.blit(background, (0, 0))
-pygame.display.flip()
+    background = pygame.Surface(screen.get_size())
+    background = background.convert()
+    background.fill((0,0,0))
+
+    font = pygame.font.Font("./otis.ttf", FONT_SIZE)
+    text = font.render("", 1, (250,0,0))
+    textPos = text.get_rect(right=-1)
+
+    screen.blit(background, (0, 0))
+    pygame.display.flip()
 
 ######### The Loop!!
 try:
+    setUpGpio()
+    setUpWindowing()
+    searchTwitter()
+    getLargestTweetId(twitterResults)
     print "WAITING"
     while True:
         loopStart = time.time()
@@ -188,14 +221,12 @@ try:
             pygame.display.flip()
             lastTextUpdate = time.time()
 
-        ## twitter check. not needed if using streams
-        if (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD):
+        ## twitter check.
+        if ((currentMotorState==STATE_WAITING) and
+            (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD) and
+            (textPos.right < 0)):
             # check twitter
-            twitterResults = twitter.search(q=SEARCH_TERM, 
-                                            include_entities="false",
-                                            count="50", result_type="recent",
-                                            since_id=lastId)
-
+            searchTwitter()
             ## parse results, print stuff, push on queue
             for tweet in twitterResults["statuses"]:
                 ## print
@@ -204,9 +235,9 @@ try:
                         tweet['user']['screen_name']))
                 ## push
                 tweetQueue.put(tweet['text'])
-                ## update lastId for next searches
-                if (int(tweet['id']) > lastId):
-                    lastId = int(tweet['id'])
+                ## update largestTweetId for next searches
+                if (int(tweet['id']) > largestTweetId):
+                    largestTweetId = int(tweet['id'])
             
             ## update timer
             lastTwitterCheck = time.time()
