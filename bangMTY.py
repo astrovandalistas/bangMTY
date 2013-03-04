@@ -90,7 +90,7 @@ LIGHT_ON_PERIOD = [0.25, 0.333]
 ##     (this can be dynamic, based on length of tweet, for example)
 NUMBER_OF_BANGS = 10
 ## font size (height in pixels)
-FONT_SIZE = 180
+FONT_SIZE = 210
 ## how long to keep text in same position before moving it (in seconds)
 TEXT_SCROLL_PERIOD = 0.1
 
@@ -172,7 +172,7 @@ try:
         ## handle events
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
-                tweetQueue.put("MESSAGED !!! É Ã ã é")
+                tweetQueue.put("MÉSSÃGÉD !!!")
             elif ((event.type == QUIT) or
                   (event.type == KEYDOWN and event.key == K_ESCAPE)):
                 cleanUpGpio()
