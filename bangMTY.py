@@ -116,7 +116,7 @@ tweetQueue = Queue.Queue()
 ######### twitter init
 twitter = None
 twitterAuthenticated = False
-twitterResults = {}
+twitterResults = None
 ## get tweets that come after this
 ## a post by @LemurLimon on 2013/02/23
 largestTweetId = 305155172542324700
@@ -130,15 +130,31 @@ for line in inFile:
     (k,v) = line.split()
     secrets[k] = v
 
+## parse results and get largest Id for tweets that came before running the program
+def getLargestTweetId():
+    global largestTweetId
+    if (not twitterResults is None):
+        for tweet in twitterResults["statuses"]:
+            print ("Tweet %s from @%s at %s" % 
+                   (tweet['id'],
+                    tweet['user']['screen_name'],
+                    tweet['created_at']))
+            print tweet['text'],"\n"
+            if (int(tweet['id']) > largestTweetId):
+                largestTweetId = int(tweet['id'])
+
 ## authenticate
 def authenticateTwitter():
-    global twitter
+    global twitter, twitterAuthenticated
     try:
         twitter = Twython(twitter_token = secrets['CONSUMER_KEY'],
                           twitter_secret = secrets['CONSUMER_SECRET'],
                           oauth_token = secrets['ACCESS_TOKEN'],
                           oauth_token_secret = secrets['ACCESS_SECRET'])
         twitterAuthenticated = True
+        ## assume connected
+        searchTwitter()
+        getLargestTweetId()
     except:
         twitter = None
         twitterAuthenticated = False
@@ -153,19 +169,8 @@ def searchTwitter():
                                        count="50", result_type="recent",
                                        since_id=largestTweetId)
     except:
-        twitterResults = {}
+        twitterResults = None
 
-## parse results and get largest Id for tweets that came before running the program
-def getLargestTweetId(theTweets):
-    global largestTweetId
-    for tweet in theTweets["statuses"]:
-        print ("Tweet %s from @%s at %s" % 
-               (tweet['id'],
-                tweet['user']['screen_name'],
-                tweet['created_at']))
-        print tweet['text'],"\n"
-        if (int(tweet['id']) > largestTweetId):
-            largestTweetId = int(tweet['id'])
 
 ######### Windowing stuff
 screen = None
@@ -198,7 +203,6 @@ try:
     setUpGpio()
     setUpWindowing()
     searchTwitter()
-    getLargestTweetId(twitterResults)
     print "WAITING"
     while True:
         loopStart = time.time()
@@ -228,16 +232,17 @@ try:
             # check twitter
             searchTwitter()
             ## parse results, print stuff, push on queue
-            for tweet in twitterResults["statuses"]:
-                ## print
-                print ("pushing %s from @%s" %
-                       (tweet['text'],
-                        tweet['user']['screen_name']))
-                ## push
-                tweetQueue.put(tweet['text'])
-                ## update largestTweetId for next searches
-                if (int(tweet['id']) > largestTweetId):
-                    largestTweetId = int(tweet['id'])
+            if (not twitterResults is None):
+                for tweet in twitterResults["statuses"]:
+                    ## print
+                    print ("pushing %s from @%s" %
+                           (tweet['text'],
+                            tweet['user']['screen_name']))
+                    ## push
+                    tweetQueue.put(tweet['text'])
+                    ## update largestTweetId for next searches
+                    if (int(tweet['id']) > largestTweetId):
+                        largestTweetId = int(tweet['id'])
             
             ## update timer
             lastTwitterCheck = time.time()
