@@ -7,10 +7,10 @@
 #  - TWITTER: https://github.com/tweepy/tweepy
 #             https://github.com/ryanmcgrath/twython
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
+#              http://bit.ly/Ld5NXV (auto-login)
 
 ## TODO:
 ## - Limit tweets to 70 characters
-## - deal with utf-8 special characters
 
 import os, sys, platform, time
 import Queue
@@ -140,7 +140,7 @@ for tweet in twitterResults["statuses"]:
            (tweet['id'],
             tweet['user']['screen_name'].encode('utf-8'),
             tweet['created_at']))
-    print tweet['text'].encode('utf-8'),"\n"
+    print tweet['text'],"\n"
     if (int(tweet['id']) > lastId):
         lastId = int(tweet['id'])
 
@@ -155,7 +155,8 @@ background = pygame.Surface(screen.get_size())
 background = background.convert()
 background.fill((0,0,0))
 
-font = pygame.font.Font("./LEDBOARDREVERSED.ttf", FONT_SIZE)
+#font = pygame.font.Font("./LEDBOARDREVERSED.ttf", FONT_SIZE)
+font = pygame.font.Font("./otis.ttf", FONT_SIZE)
 text = font.render("", 1, (250,0,0))
 textPos = text.get_rect(right=-1)
 
@@ -179,7 +180,7 @@ try:
         ## blit stuff
         if ((textPos.right > -1) and
             (time.time()-lastTextUpdate > TEXT_SCROLL_PERIOD)):
-            textPos.right -= FONT_SIZE/9
+            textPos.right -= FONT_SIZE/7
             background.fill((0,0,0))
             background.blit(text, textPos)
             screen.blit(background, (0,0))
@@ -198,10 +199,10 @@ try:
             for tweet in twitterResults["statuses"]:
                 ## print
                 print ("pushing %s from @%s" %
-                       (tweet['text'].encode('utf-8'),
+                       (tweet['text'],
                         tweet['user']['screen_name'].encode('utf-8')))
                 ## push
-                tweetQueue.put(tweet['text'].encode('utf-8'))
+                tweetQueue.put(tweet['text'])
                 ## update lastId for next searches
                 if (int(tweet['id']) > lastId):
                     lastId = int(tweet['id'])

@@ -27,3 +27,7 @@ After installing all dependencies:
 * git clone https://github.com/thiagohersan/bangMTYRpiPy.git
 * cd bangMTYRpiPy
 * ./bangMTY.py
+
+---
+
+The FontStruction [“Otis”](http://fontstruct.com/fontstructions/show/17629) by Nate Cox is licensed under a [Creative Commons Attribution Non-commercial No Derivatives license](http://creativecommons.org/licenses/by-nc-nd/3.0/).
