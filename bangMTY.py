@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# -*- coding: latin-1 -*-
 
 ## References:
 #  - GPIO: http://bit.ly/JTlFE3 (elinux.org wiki)
@@ -171,7 +172,7 @@ try:
         ## handle events
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
-                tweetQueue.put("messaged!!!")
+                tweetQueue.put("MESSAGED !!! É Ã ã é")
             elif ((event.type == QUIT) or
                   (event.type == KEYDOWN and event.key == K_ESCAPE)):
                 cleanUpGpio()
