@@ -277,7 +277,7 @@ try:
                 textAndPos = []
             currentWidth = 0
             for subTweet in textObjects:
-                t = font.render(subTweet, 1, (250,0,0))
+                t = font.render(subTweet+" ", 1, (250,0,0))
                 p = t.get_rect(left=background.get_width()+currentWidth,
                                centery=background.get_height()/2)
                 currentWidth += p.width
