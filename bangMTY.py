@@ -8,6 +8,7 @@
 #  - TWITTER: https://github.com/tweepy/tweepy
 #             https://github.com/ryanmcgrath/twython
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
+#              http://bit.ly/XmX8gA (display.set_mode)
 #              http://bit.ly/Ld5NXV (auto-login)
 
 ## TODO:
@@ -182,9 +183,11 @@ textpos = None
 def setUpWindowing():
     global screen, background, font, text, textPos
 
+    flags = pygame.FULLSCREEN|pygame.DOUBLEBUF|pygame.HWSURFACE
+
     pygame.init()
-    screen = pygame.display.set_mode((1280, 720))
-    pygame.display.set_caption('Test')
+    screen = pygame.display.set_mode((0, 0),flags)
+    pygame.display.set_caption('#bangMTY')
     pygame.mouse.set_visible(False)
 
     background = pygame.Surface(screen.get_size())
