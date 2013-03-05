@@ -169,9 +169,10 @@ def searchTwitter():
     if ((not twitterAuthenticated) or (twitter is None)):
         authenticateTwitter()
     try:
-        twitterResults = twitter.search(q=SEARCH_TERM, include_entities="false",
-                                       count="50", result_type="recent",
-                                       since_id=largestTweetId)
+        twitterResults = twitter.search(q=SEARCH_TERM, 
+                                        include_entities="false",
+                                        count="50", result_type="recent",
+                                        since_id=largestTweetId)
     except:
         twitterResults = None
 
