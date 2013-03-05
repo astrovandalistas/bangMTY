@@ -123,7 +123,7 @@ twitterResults = None
 ## get tweets that come after this
 ## a post by @LemurLimon on 2013/02/23
 largestTweetId = 305155172542324700
-tweetSplit = re.compile("^(.{0,70}) (.{0,70})$")
+tweetSplit = re.compile("^(.{0,70}) (.{0,100})$")
 ## with these terms
 SEARCH_TERM = "#bangMTY #BangMTY #bangMty #BangMty #bangmty #Bangmty #BANGMTY"
 
@@ -202,17 +202,6 @@ def setUpWindowing():
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
-####### DEBUG
-foo = "Calculate and display the number of characters within a TEXTAREA with this script."
-s = time.time()
-r = tweetSplit.search(foo)
-print time.time()-s
-for l in r.groups():
-    print "len("+l+")="+str(len(l))
-
-##sys.exit(0)
-
-
 ######### The Loop!!
 try:
     setUpGpio()
@@ -273,11 +262,26 @@ try:
             (not tweetQueue.empty())):
             print "BANG FWD"
             tweetText = tweetQueue.get()
-            # display message
-            textAndPos[0]['text'] = font.render(tweetText, 1, (250,0,0))
-            textAndPos[0]['pos'] = textAndPos[0]['text'].get_rect(
-                left=background.get_width(), centery=background.get_height()/2)
-            ### background.blit(text, textPos)
+
+            # create objects to display text
+            textObjects = []
+            if (len(tweetText) > 80):
+                regExpResult = tweetSplit.search(tweetText)
+                if (not regExpResult is None):
+                    textObjects = regExpResult.groups()
+            else:
+                textObjects = [tweetText]
+
+            if (len(textObjects) > 0):
+                textAndPos = []
+            currentWidth = 0
+            for subTweet in textObjects:
+                t = font.render(subTweet, 1, (250,0,0))
+                p = t.get_rect(left=background.get_width()+currentWidth,
+                               centery=background.get_height()/2)
+                currentWidth += p.width
+                textAndPos.insert(0,{'text':t,'pos':p})
+
             # set pins
             gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
             gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
