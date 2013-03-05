@@ -1,0 +1,13 @@
+#!/bin/bash
+
+## get pin numbers from code
+numbers=$(grep "PIN =\|PIN=" bangMTY.py | sed 's/[^0-9,]//g' | sed 's/,/ /g')
+
+## do the export thing
+for n in ${numbers} 
+do
+   gpio export ${n} out
+done
+
+# start bangMTY.py
+./bangMTY.py
