@@ -10,12 +10,14 @@
 #  - GRAPHICS: http://bit.ly/96VoEC (pygame)
 #              http://bit.ly/XmX8gA (display.set_mode)
 #              http://bit.ly/Ld5NXV (auto-login)
+#  - REGEXP: http://bit.ly/5UuJA (Py RegExp Testing Tool)
 
 ## TODO:
 ## - Limit tweets to 70 characters
 ## - add Main function ??
 
 import os, sys, platform, time
+import re
 import Queue
 import pygame
 from pygame.locals import *
@@ -121,6 +123,7 @@ twitterResults = None
 ## get tweets that come after this
 ## a post by @LemurLimon on 2013/02/23
 largestTweetId = 305155172542324700
+tweetSplit = re.compile("^(.{0,70}) (.{0,70})$")
 ## with these terms
 SEARCH_TERM = "#bangMTY #BangMTY #bangMty #BangMty #bangmty #Bangmty #BANGMTY"
 
@@ -177,11 +180,10 @@ def searchTwitter():
 screen = None
 background = None
 font = None
-text = None
-textpos = None
+textAndPos = None
 
 def setUpWindowing():
-    global screen, background, font, text, textPos
+    global screen, background, font, textAndPos
 
     flags = pygame.FULLSCREEN|pygame.DOUBLEBUF|pygame.HWSURFACE
 
@@ -195,11 +197,21 @@ def setUpWindowing():
     background.fill((0,0,0))
 
     font = pygame.font.Font("./otis.ttf", FONT_SIZE)
-    text = font.render("", 1, (250,0,0))
-    textPos = text.get_rect(right=-1)
-
+    textAndPos = [{'text':font.render("", 1, (250,0,0)),
+                   'pos':Rect(-2,0,-1,0)}]
     screen.blit(background, (0, 0))
     pygame.display.flip()
+
+####### DEBUG
+foo = "Calculate and display the number of characters within a TEXTAREA with this script."
+s = time.time()
+r = tweetSplit.search(foo)
+print time.time()-s
+for l in r.groups():
+    print "len("+l+")="+str(len(l))
+
+##sys.exit(0)
+
 
 ######### The Loop!!
 try:
@@ -219,11 +231,13 @@ try:
                 sys.exit()
 
         ## blit stuff
-        if ((textPos.right > -1) and
+        if ((textAndPos[0]['pos'].right > -1) and
             (time.time()-lastTextUpdate > TEXT_SCROLL_PERIOD)):
-            textPos.right -= FONT_SIZE/7
             background.fill((0,0,0))
-            background.blit(text, textPos)
+            for tpd in textAndPos:
+                tpd['pos'].right -= FONT_SIZE/7
+                background.blit(tpd['text'], tpd['pos'])
+
             screen.blit(background, (0,0))
             pygame.display.flip()
             lastTextUpdate = time.time()
@@ -231,7 +245,7 @@ try:
         ## twitter check.
         if ((currentMotorState==STATE_WAITING) and
             (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD) and
-            (textPos.right < 0)):
+            (textAndPos[0]['pos'].right < 0)):
             # check twitter
             searchTwitter()
             ## parse results, print stuff, push on queue
@@ -255,14 +269,14 @@ try:
         ##     tweets to process, then start dance
         if ((currentMotorState==STATE_WAITING) and
             (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
-            (textPos.right < 0) and
+            (textAndPos[0]['pos'].right < 0) and
             (not tweetQueue.empty())):
             print "BANG FWD"
             tweetText = tweetQueue.get()
             # display message
-            text = font.render(tweetText, 1, (250,0,0))
-            textPos = text.get_rect(left=background.get_width(),
-                                    centery=background.get_height()/2)
+            textAndPos[0]['text'] = font.render(tweetText, 1, (250,0,0))
+            textAndPos[0]['pos'] = textAndPos[0]['text'].get_rect(
+                left=background.get_width(), centery=background.get_height()/2)
             ### background.blit(text, textPos)
             # set pins
             gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
