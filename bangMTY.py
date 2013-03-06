@@ -120,8 +120,7 @@ tweetQueue = Queue.Queue()
 twitter = None
 twitterAuthenticated = False
 twitterResults = None
-## get tweets that come after this
-## a post by @LemurLimon on 2013/02/23
+## get tweets that come after this post made on 2013/02/23
 largestTweetId = 305155172542324700
 tweetSplit = re.compile("^(.{0,70}) (.{0,100})$")
 ## with these terms
@@ -134,7 +133,7 @@ for line in inFile:
     (k,v) = line.split()
     secrets[k] = v
 
-## parse results and get largest Id for tweets that came before running the program
+## get largest Id for tweets that came before starting the program
 def getLargestTweetId():
     global largestTweetId
     if (not twitterResults is None):
@@ -213,7 +212,7 @@ try:
         loopStart = time.time()
         ## handle events
         for event in pygame.event.get():
-            if event.type == MOUSEBUTTONDOWN:
+            if (event.type == MOUSEBUTTONDOWN):
                 tweetQueue.put("MÉSSÃGÉD !!!")
             elif ((event.type == QUIT) or
                   (event.type == KEYDOWN and event.key == K_ESCAPE)):
@@ -346,7 +345,7 @@ try:
                     lastLightUpdate[i] = time.time()
         ## keep it from looping faster than ~60 times per second
         loopTime = time.time()-loopStart
-        if loopTime < 0.017:
+        if (loopTime < 0.017):
             time.sleep(0.017 - loopTime)
 
 except KeyboardInterrupt:
