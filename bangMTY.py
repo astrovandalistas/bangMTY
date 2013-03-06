@@ -82,7 +82,7 @@ def cleanUpGpio():
 
 ######### time constants
 ## how often to check twitter (in seconds)
-TWITTER_CHECK_PERIOD = 10
+TWITTER_CHECK_PERIOD = 6
 ## how often to check queue for new tweets to be processed (in seconds)
 ##     or, how much time between bang routines
 QUEUE_CHECK_PERIOD = 1
