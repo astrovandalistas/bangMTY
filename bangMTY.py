@@ -260,7 +260,7 @@ def loop():
         (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
         (textAndPos[0]['pos'].right < 0) and
         (not tweetQueue.empty())):
-        print "BANG FWD MAIN"
+        print "BANG FWD"
         tweetText = tweetQueue.get()
 
         # create objects to display text
@@ -300,7 +300,7 @@ def loop():
     elif ((currentMotorState==STATE_PAUSE_BACK) and
           (time.time()-lastMotorUpdate > MOTOR_OFF_PERIOD) and
           (bangsLeft > 0)):
-        print "BANG BACK MAIN"
+        print "BANG BACK"
         gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
         gpio.digitalWrite(MOTOR_PIN[1],gpio.HIGH)
         currentMotorState = STATE_BANGING_BACK
@@ -318,7 +318,7 @@ def loop():
     elif ((currentMotorState==STATE_PAUSE_FORWARD) and
           (time.time()-lastMotorUpdate > MOTOR_OFF_PERIOD) and
           (bangsLeft > 0)):
-        print "BANG FWD MAIN"
+        print "BANG FWD"
         gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
         gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
         currentMotorState = STATE_BANGING_FORWARD
@@ -327,7 +327,7 @@ def loop():
     elif((currentMotorState != STATE_WAITING) and 
          (bangsLeft <= 0) and 
          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
-        print "WAITING MAIN"
+        print "WAITING"
         gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
         gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
         gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
@@ -346,7 +346,7 @@ def loop():
 ######### main
 def main():
     setup()
-    print "WAITING MAIN"
+    print "WAITING"
     while True:
         ## keep it from looping faster than ~60 times per second
         loopStart = time.time()
