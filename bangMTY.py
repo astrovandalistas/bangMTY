@@ -12,10 +12,6 @@
 #              http://bit.ly/Ld5NXV (auto-login)
 #  - REGEXP: http://bit.ly/5UuJA (Py RegExp Testing Tool)
 
-## TODO:
-## - Limit tweets to 70 characters
-## - add Main function ??
-
 import os, sys, platform, time
 import re
 import Queue
@@ -202,152 +198,167 @@ def setUpWindowing():
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
-######### The Loop!!
-try:
+######### Setup
+def setup():
     setUpGpio()
     setUpWindowing()
     searchTwitter()
-    print "WAITING"
-    while True:
-        loopStart = time.time()
-        ## handle events
-        for event in pygame.event.get():
-            if (event.type == MOUSEBUTTONDOWN):
-                tweetQueue.put("MÉSSÃGÉD !!!")
-            elif ((event.type == QUIT) or
-                  (event.type == KEYDOWN and event.key == K_ESCAPE)):
-                cleanUpGpio()
-                sys.exit()
 
-        ## blit stuff
-        if ((textAndPos[0]['pos'].right > -1) and
-            (time.time()-lastTextUpdate > TEXT_SCROLL_PERIOD)):
-            background.fill((0,0,0))
-            for tpd in textAndPos:
-                tpd['pos'].right -= FONT_SIZE/7
-                background.blit(tpd['text'], tpd['pos'])
+######### Loop
+def loop():
+    global currentMotorState, bangsLeft, currentLightState
+    global lastTwitterCheck, lastMotorUpdate, lastLightUpdate, lastTextUpdate
+    global largestTweetId, textAndPos
 
-            screen.blit(background, (0,0))
-            pygame.display.flip()
-            lastTextUpdate = time.time()
+    ## handle events
+    for event in pygame.event.get():
+        if (event.type == MOUSEBUTTONDOWN):
+            tweetQueue.put("MÉSSÃGÉD !!!")
+        elif ((event.type == QUIT) or
+              (event.type == KEYDOWN and event.key == K_ESCAPE)):
+            cleanUpGpio()
+            sys.exit()
 
-        ## twitter check.
-        if ((currentMotorState==STATE_WAITING) and
-            (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD) and
-            (textAndPos[0]['pos'].right < 0)):
-            # check twitter
-            searchTwitter()
-            ## parse results, print stuff, push on queue
-            if (not twitterResults is None):
-                for tweet in twitterResults["statuses"]:
-                    ## print
-                    print ("pushing %s from @%s" %
-                           (tweet['text'],
-                            tweet['user']['screen_name']))
-                    ## push
-                    tweetQueue.put(tweet['text'])
-                    ## update largestTweetId for next searches
-                    if (int(tweet['id']) > largestTweetId):
-                        largestTweetId = int(tweet['id'])
+    ## graphics stuff
+    if ((textAndPos[0]['pos'].right > -1) and
+        (time.time()-lastTextUpdate > TEXT_SCROLL_PERIOD)):
+        background.fill((0,0,0))
+        for tpd in textAndPos:
+            tpd['pos'].right -= FONT_SIZE/7
+            background.blit(tpd['text'], tpd['pos'])
+
+        screen.blit(background, (0,0))
+        pygame.display.flip()
+        lastTextUpdate = time.time()
+
+    ## twitter check.
+    if ((currentMotorState==STATE_WAITING) and
+        (time.time()-lastTwitterCheck > TWITTER_CHECK_PERIOD) and
+        (textAndPos[0]['pos'].right < 0)):
+        # check twitter
+        searchTwitter()
+        ## parse results, print stuff, push on queue
+        if (not twitterResults is None):
+            for tweet in twitterResults["statuses"]:
+                ## print
+                print ("pushing %s from @%s" %
+                       (tweet['text'],
+                        tweet['user']['screen_name']))
+                ## push
+                tweetQueue.put(tweet['text'])
+                ## update largestTweetId for next searches
+                if (int(tweet['id']) > largestTweetId):
+                    largestTweetId = int(tweet['id'])
             
-            ## update timer
-            lastTwitterCheck = time.time()
+        ## update timer
+        lastTwitterCheck = time.time()
     
-        ## state machine for motors
-        ## if motor is idle, no text is scrolling and there are 
-        ##     tweets to process, then start dance
-        if ((currentMotorState==STATE_WAITING) and
-            (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
-            (textAndPos[0]['pos'].right < 0) and
-            (not tweetQueue.empty())):
-            print "BANG FWD"
-            tweetText = tweetQueue.get()
+    ## state machine for motors
+    ## if motor is idle, no text is scrolling and there are 
+    ##     tweets to process, then start dance
+    if ((currentMotorState==STATE_WAITING) and
+        (time.time()-lastMotorUpdate > QUEUE_CHECK_PERIOD) and
+        (textAndPos[0]['pos'].right < 0) and
+        (not tweetQueue.empty())):
+        print "BANG FWD MAIN"
+        tweetText = tweetQueue.get()
 
-            # create objects to display text
-            textObjects = []
-            if (len(tweetText) > 80):
-                regExpResult = tweetSplit.search(tweetText)
-                if (not regExpResult is None):
-                    textObjects = regExpResult.groups()
-            else:
-                textObjects = [tweetText]
+        # create objects to display text
+        textObjects = []
+        if (len(tweetText) > 80):
+            regExpResult = tweetSplit.search(tweetText)
+            if (not regExpResult is None):
+                textObjects = regExpResult.groups()
+        else:
+            textObjects = [tweetText]
 
-            if (len(textObjects) > 0):
-                textAndPos = []
-            currentWidth = 0
-            for subTweet in textObjects:
-                t = font.render(subTweet+" ", 1, (250,0,0))
-                p = t.get_rect(left=background.get_width()+currentWidth,
-                               centery=background.get_height()/2)
-                currentWidth += p.width
-                textAndPos.insert(0,{'text':t,'pos':p})
+        if (len(textObjects) > 0):
+            textAndPos = []
+        currentWidth = 0
+        for subTweet in textObjects:
+            t = font.render(subTweet+" ", 1, (250,0,0))
+            p = t.get_rect(left=background.get_width()+currentWidth,
+                           centery=background.get_height()/2)
+            currentWidth += p.width
+            textAndPos.insert(0,{'text':t,'pos':p})
 
-            # set pins
-            gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
-            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-            currentMotorState=STATE_BANGING_FORWARD
-            lastMotorUpdate = time.time()
-            bangsLeft = NUMBER_OF_BANGS
-        ## if motor0 has been on for a while, pause, then reverse direction
-        elif ((currentMotorState==STATE_BANGING_FORWARD) and
-              (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
-              (bangsLeft > 0)):
-            gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-            currentMotorState=STATE_PAUSE_BACK
-            lastMotorUpdate = time.time()            
-        ## if we're done pausing, proceed
-        elif ((currentMotorState==STATE_PAUSE_BACK) and
-              (time.time()-lastMotorUpdate > MOTOR_OFF_PERIOD) and
-              (bangsLeft > 0)):
-            print "BANG BACK"
-            gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-            gpio.digitalWrite(MOTOR_PIN[1],gpio.HIGH)
-            currentMotorState=STATE_BANGING_BACK
-            lastMotorUpdate = time.time()
-            bangsLeft -= 1
-        ## if motor1 has been on for a while, pause, then reverse direction
-        elif ((currentMotorState==STATE_BANGING_BACK) and
-              (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
-              (bangsLeft > 0)):
-            gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-            currentMotorState=STATE_PAUSE_FORWARD
-            lastMotorUpdate = time.time()            
-        ## if we're done pausing, proceed
-        elif ((currentMotorState==STATE_PAUSE_FORWARD) and
-              (time.time()-lastMotorUpdate > MOTOR_OFF_PERIOD) and
-              (bangsLeft > 0)):
-            print "BANG FWD"
-            gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
-            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-            currentMotorState=STATE_BANGING_FORWARD
-            lastMotorUpdate = time.time()
-        ## if no more bangs left
-        elif((currentMotorState != STATE_WAITING) and 
-             (bangsLeft <= 0) and 
-             (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
-            print "WAITING"
-            gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
-            gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
-            gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
-            gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
-            currentMotorState=STATE_WAITING
-            lastMotorUpdate = time.time()
-    
-        ## state machine for lights
-        ## if banging, flicker the lights
-        if (currentMotorState != STATE_WAITING):
-            for i in range(0,2):
-                if (time.time()-lastLightUpdate[i] > LIGHT_ON_PERIOD[i]):
-                    currentLightState[i] = not currentLightState[i]
-                    gpio.digitalWrite(LIGHT_PIN[i],currentLightState[i])
-                    lastLightUpdate[i] = time.time()
+        # set pins
+        gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
+        gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+        currentMotorState = STATE_BANGING_FORWARD
+        lastMotorUpdate = time.time()
+        bangsLeft = NUMBER_OF_BANGS
+    ## if motor0 has been on for a while, pause, then reverse direction
+    elif ((currentMotorState==STATE_BANGING_FORWARD) and
+          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
+          (bangsLeft > 0)):
+        gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+        gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+        currentMotorState = STATE_PAUSE_BACK
+        lastMotorUpdate = time.time()            
+    ## if we're done pausing, proceed
+    elif ((currentMotorState==STATE_PAUSE_BACK) and
+          (time.time()-lastMotorUpdate > MOTOR_OFF_PERIOD) and
+          (bangsLeft > 0)):
+        print "BANG BACK MAIN"
+        gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+        gpio.digitalWrite(MOTOR_PIN[1],gpio.HIGH)
+        currentMotorState = STATE_BANGING_BACK
+        lastMotorUpdate = time.time()
+        bangsLeft -= 1
+    ## if motor1 has been on for a while, pause, then reverse direction
+    elif ((currentMotorState==STATE_BANGING_BACK) and
+          (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD) and
+          (bangsLeft > 0)):
+        gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+        gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+        currentMotorState = STATE_PAUSE_FORWARD
+        lastMotorUpdate = time.time()            
+    ## if we're done pausing, proceed
+    elif ((currentMotorState==STATE_PAUSE_FORWARD) and
+          (time.time()-lastMotorUpdate > MOTOR_OFF_PERIOD) and
+          (bangsLeft > 0)):
+        print "BANG FWD MAIN"
+        gpio.digitalWrite(MOTOR_PIN[0],gpio.HIGH)
+        gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+        currentMotorState = STATE_BANGING_FORWARD
+        lastMotorUpdate = time.time()
+    ## if no more bangs left
+    elif((currentMotorState != STATE_WAITING) and 
+         (bangsLeft <= 0) and 
+         (time.time()-lastMotorUpdate > MOTOR_ON_PERIOD)):
+        print "WAITING MAIN"
+        gpio.digitalWrite(MOTOR_PIN[0],gpio.LOW)
+        gpio.digitalWrite(MOTOR_PIN[1],gpio.LOW)
+        gpio.digitalWrite(LIGHT_PIN[0],gpio.LOW)
+        gpio.digitalWrite(LIGHT_PIN[1],gpio.LOW)
+        currentMotorState = STATE_WAITING
+        lastMotorUpdate = time.time()
+
+    ## state machine for lights: if banging, flicker lights
+    if (currentMotorState != STATE_WAITING):
+        for i in range(0,2):
+            if (time.time()-lastLightUpdate[i] > LIGHT_ON_PERIOD[i]):
+                currentLightState[i] = not currentLightState[i]
+                gpio.digitalWrite(LIGHT_PIN[i],currentLightState[i])
+                lastLightUpdate[i] = time.time()
+
+######### main
+def main():
+    setup()
+    print "WAITING MAIN"
+    while True:
         ## keep it from looping faster than ~60 times per second
+        loopStart = time.time()
+        loop()
         loopTime = time.time()-loopStart
         if (loopTime < 0.017):
             time.sleep(0.017 - loopTime)
 
-except KeyboardInterrupt:
-    cleanUpGpio()
+######### magick
+if __name__=="__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        cleanUpGpio()
 
